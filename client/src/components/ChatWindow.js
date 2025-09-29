@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { messagesAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import './ChatWindow.css';
@@ -11,24 +11,8 @@ function ChatWindow({ selectedUser }) {
   const messagesEndRef = useRef(null);
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (selectedUser) {
-      loadMessages();
-      // Poll for new messages every 3 seconds
-      const interval = setInterval(loadMessages, 3000);
-      return () => clearInterval(interval);
-    }
-  }, [selectedUser]);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const loadMessages = async () => {
+  // Wrap loadMessages in useCallback to prevent infinite loops
+  const loadMessages = useCallback(async () => {
     if (!selectedUser) return;
     
     setLoading(true);
@@ -39,6 +23,23 @@ function ChatWindow({ selectedUser }) {
       console.error('Error loading messages:', error);
     }
     setLoading(false);
+  }, [selectedUser]);
+
+  useEffect(() => {
+    if (selectedUser) {
+      loadMessages();
+      // Poll for new messages every 3 seconds
+      const interval = setInterval(loadMessages, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [selectedUser, loadMessages]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const handleSendMessage = async (e) => {
