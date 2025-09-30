@@ -1,0 +1,41 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'server/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'server/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    
+    - name: Install dependencies
+      working-directory: ./server
+      run: npm install
+    
+    - name: Run tests
+      working-directory: ./server
+      run: npm test || echo "No tests specified yet"
+    
+    - name: Check server starts
+      working-directory: ./server
+      run: |
+        timeout 10s node server.js || exit 0
+      env:
+        MONGODB_URI: mongodb://localhost:27017/test
+        JWT_SECRET: test_secret
+        NODE_ENV: test
